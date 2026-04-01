@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/lib/store';
 import { Team } from '@/lib/types';
@@ -62,6 +63,14 @@ export default function JoinTeamScreen() {
       if (updateError) throw updateError;
 
       setProfile({ ...profile, team_id: team.id });
+
+      // Players go to Connect Canvas, coaches go straight to tabs
+      if (profile.role === 'player') {
+        router.replace('/(onboarding)/connect-canvas');
+      } else {
+        router.replace('/(coach)');
+      }
+      return;
     } catch (e: any) {
       setError(e.message ?? 'Failed to join team.');
     } finally {

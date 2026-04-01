@@ -3,12 +3,11 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuthStore } from '@/lib/store';
@@ -29,6 +28,7 @@ export default function SignUpScreen() {
   const { signUp, loading } = useAuthStore();
 
   const handleSignUp = async () => {
+    Alert.alert('DEBUG', 'Button was pressed!');
     setError('');
     if (!fullName || !email || !password || !role) {
       setError('Please fill in all fields and select a role.');
@@ -40,96 +40,97 @@ export default function SignUpScreen() {
     }
     try {
       await signUp(email.trim(), password, fullName.trim(), role);
+      Alert.alert('Success', 'Account created successfully!');
     } catch (e: any) {
-      setError(e.message ?? 'Sign up failed.');
+      const msg = e.message ?? 'Sign up failed.';
+      setError(msg);
+      Alert.alert('Sign Up Error', msg);
     }
   };
 
   return (
-    <KeyboardAvoidingView
+    <ScrollView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      keyboardDismissMode="on-drag"
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join your team on TeamSync Academic</Text>
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Join your team on TeamSync Academic</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Full Name"
-          value={fullName}
-          onChangeText={setFullName}
-          placeholderTextColor="#999"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Full Name"
+        value={fullName}
+        onChangeText={setFullName}
+        placeholderTextColor="#999"
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor="#999"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        placeholderTextColor="#999"
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#999"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholderTextColor="#999"
+      />
 
-        <Text style={styles.roleLabel}>Select your role</Text>
-        <View style={styles.roleList}>
-          {roles.map((r) => (
-            <Pressable
-              key={r.key}
-              style={[
-                styles.roleCard,
-                role === r.key && styles.roleCardSelected,
-              ]}
-              onPress={() => setRole(r.key)}
-            >
-              <Text
-                style={[
-                  styles.roleText,
-                  role === r.key && styles.roleTextSelected,
-                ]}
-              >
-                {r.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+      <Text style={styles.roleLabel}>Select your role</Text>
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignUp}
-          disabled={loading}
+      {roles.map((r) => (
+        <TouchableOpacity
+          key={r.key}
+          style={[
+            styles.roleCard,
+            role === r.key && styles.roleCardSelected,
+          ]}
+          onPress={() => setRole(r.key)}
+          activeOpacity={0.7}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Create Account</Text>
-          )}
-        </Pressable>
+          <Text
+            style={[
+              styles.roleText,
+              role === r.key && styles.roleTextSelected,
+            ]}
+          >
+            {r.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
 
-        <Link href="/(auth)/login" asChild>
-          <Pressable>
-            <Text style={styles.footerText}>
-              Already have an account? <Text style={styles.link}>Sign In</Text>
-            </Text>
-          </Pressable>
-        </Link>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleSignUp}
+        disabled={loading}
+        activeOpacity={0.7}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Create Account</Text>
+        )}
+      </TouchableOpacity>
+
+      <Link href="/(auth)/login" asChild>
+        <TouchableOpacity>
+          <Text style={styles.footerText}>
+            Already have an account? <Text style={styles.link}>Sign In</Text>
+          </Text>
+        </TouchableOpacity>
+      </Link>
+    </ScrollView>
   );
 }
 
@@ -139,21 +140,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 16,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   input: {
     borderWidth: 1,
@@ -162,14 +163,13 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+    marginBottom: 12,
   },
   roleLabel: {
     fontSize: 16,
     fontWeight: '600',
     marginTop: 8,
-  },
-  roleList: {
-    gap: 12,
+    marginBottom: 12,
   },
   roleCard: {
     borderWidth: 1,
@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     backgroundColor: '#f5f5f5',
+    marginBottom: 10,
   },
   roleCardSelected: {
     borderColor: '#0a7ea4',
@@ -196,7 +197,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 16,
+    marginBottom: 16,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -208,7 +210,6 @@ const styles = StyleSheet.create({
   },
   link: {
     color: '#0a7ea4',
-    textAlign: 'center',
     fontSize: 14,
   },
   footerText: {
@@ -220,5 +221,6 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     textAlign: 'center',
     fontSize: 14,
+    marginBottom: 8,
   },
 });
