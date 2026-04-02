@@ -1,13 +1,9 @@
 import { useState } from 'react';
 import {
-  View,
   Text,
   TextInput,
-  Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  ScrollView,
   Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
@@ -18,89 +14,88 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { signIn, loading } = useAuthStore();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { signIn } = useAuthStore();
 
-  const handleLogin = async () => {
+  const doLogin = async () => {
     setError('');
     if (!email || !password) {
       setError('Please fill in all fields.');
       return;
     }
+
+    setLocalLoading(true);
     try {
       await signIn(email.trim(), password);
     } catch (e: any) {
-      setError(e.message ?? 'Sign in failed.');
+      const msg = e.message ?? 'Sign in failed.';
+      setError(msg);
+      Alert.alert('Sign In Error', msg);
+    } finally {
+      setLocalLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
+  const doForgotPassword = async () => {
     if (!email) {
-      Alert.alert('Enter your email', 'Please enter your email address first, then tap Forgot Password.');
+      Alert.alert('Enter your email', 'Type your email above, then tap Forgot Password.');
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      Alert.alert('Check your email', 'A password reset link has been sent to your email.');
+      Alert.alert('Check your email', 'A password reset link has been sent.');
     }
   };
 
   return (
-    <KeyboardAvoidingView
+    <ScrollView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
     >
-      <View style={styles.inner}>
-        <Text style={styles.title}>TeamSync Academic</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+      <Text style={styles.title}>TeamSync Academic</Text>
+      <Text style={styles.subtitle}>Sign in to your account</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor="#999"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        placeholderTextColor="#999"
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#999"
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        placeholderTextColor="#999"
+      />
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
-          )}
-        </Pressable>
+      <Text
+        style={[styles.button, localLoading && styles.buttonDisabled]}
+        onPress={localLoading ? undefined : doLogin}
+      >
+        {localLoading ? 'Signing In...' : 'Sign In'}
+      </Text>
 
-        <Pressable onPress={handleForgotPassword}>
-          <Text style={styles.link}>Forgot password?</Text>
-        </Pressable>
+      <Text style={styles.link} onPress={doForgotPassword}>
+        Forgot password?
+      </Text>
 
-        <Link href="/(auth)/sign-up" asChild>
-          <Pressable>
-            <Text style={styles.footerText}>
-              Don't have an account? <Text style={styles.link}>Sign Up</Text>
-            </Text>
-          </Pressable>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+      <Link href="/(auth)/sign-up" asChild>
+        <Text style={styles.footerText}>
+          Don't have an account? <Text style={styles.link}>Sign Up</Text>
+        </Text>
+      </Link>
+    </ScrollView>
   );
 }
 
@@ -109,22 +104,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  inner: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   input: {
     borderWidth: 1,
@@ -133,26 +129,28 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+    marginBottom: 12,
   },
   button: {
     backgroundColor: '#0a7ea4',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   link: {
     color: '#0a7ea4',
     textAlign: 'center',
     fontSize: 14,
+    marginBottom: 16,
   },
   footerText: {
     textAlign: 'center',
@@ -163,5 +161,6 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     textAlign: 'center',
     fontSize: 14,
+    marginBottom: 12,
   },
 });
