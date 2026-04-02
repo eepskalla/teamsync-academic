@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuthStore } from '@/lib/store';
@@ -25,10 +25,12 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole | null>(null);
   const [error, setError] = useState('');
-  const { signUp, loading } = useAuthStore();
+  const [localLoading, setLocalLoading] = useState(false);
+  const { signUp } = useAuthStore();
 
-  const handleSignUp = async () => {
-    Alert.alert('DEBUG', 'Button was pressed!');
+  const doSignUp = async () => {
+    Alert.alert('DEBUG', 'Button tapped!');
+
     setError('');
     if (!fullName || !email || !password || !role) {
       setError('Please fill in all fields and select a role.');
@@ -38,13 +40,17 @@ export default function SignUpScreen() {
       setError('Password must be at least 6 characters.');
       return;
     }
+
+    setLocalLoading(true);
     try {
       await signUp(email.trim(), password, fullName.trim(), role);
-      Alert.alert('Success', 'Account created successfully!');
+      Alert.alert('Success', 'Account created!');
     } catch (e: any) {
       const msg = e.message ?? 'Sign up failed.';
       setError(msg);
       Alert.alert('Sign Up Error', msg);
+    } finally {
+      setLocalLoading(false);
     }
   };
 
@@ -53,7 +59,6 @@ export default function SignUpScreen() {
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="always"
-      keyboardDismissMode="on-drag"
     >
       <Text style={styles.title}>Create Account</Text>
       <Text style={styles.subtitle}>Join your team on TeamSync Academic</Text>
@@ -90,45 +95,29 @@ export default function SignUpScreen() {
       <Text style={styles.roleLabel}>Select your role</Text>
 
       {roles.map((r) => (
-        <TouchableOpacity
+        <Text
           key={r.key}
           style={[
-            styles.roleCard,
-            role === r.key && styles.roleCardSelected,
+            styles.roleOption,
+            role === r.key && styles.roleOptionSelected,
           ]}
           onPress={() => setRole(r.key)}
-          activeOpacity={0.7}
         >
-          <Text
-            style={[
-              styles.roleText,
-              role === r.key && styles.roleTextSelected,
-            ]}
-          >
-            {r.label}
-          </Text>
-        </TouchableOpacity>
+          {role === r.key ? '● ' : '○ '}{r.label}
+        </Text>
       ))}
 
-      <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
-        onPress={handleSignUp}
-        disabled={loading}
-        activeOpacity={0.7}
+      <Text
+        style={[styles.submitButton, localLoading && styles.submitButtonDisabled]}
+        onPress={localLoading ? undefined : doSignUp}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Create Account</Text>
-        )}
-      </TouchableOpacity>
+        {localLoading ? 'Creating Account...' : 'Create Account'}
+      </Text>
 
       <Link href="/(auth)/login" asChild>
-        <TouchableOpacity>
-          <Text style={styles.footerText}>
-            Already have an account? <Text style={styles.link}>Sign In</Text>
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.footerText}>
+          Already have an account? <Text style={styles.link}>Sign In</Text>
+        </Text>
       </Link>
     </ScrollView>
   );
@@ -171,42 +160,38 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
-  roleCard: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-    marginBottom: 10,
-  },
-  roleCardSelected: {
-    borderColor: '#0a7ea4',
-    backgroundColor: '#e8f4f8',
-  },
-  roleText: {
+  roleOption: {
     fontSize: 16,
     color: '#333',
-    textAlign: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
   },
-  roleTextSelected: {
+  roleOptionSelected: {
+    borderColor: '#0a7ea4',
+    backgroundColor: '#e8f4f8',
     color: '#0a7ea4',
     fontWeight: '600',
   },
-  button: {
+  submitButton: {
     backgroundColor: '#0a7ea4',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   link: {
     color: '#0a7ea4',
@@ -221,6 +206,6 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     textAlign: 'center',
     fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 12,
   },
 });
